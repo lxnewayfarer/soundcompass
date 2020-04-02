@@ -1,0 +1,2 @@
+rootProject.name='SoundCompas'
+include ':app'
