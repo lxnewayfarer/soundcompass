@@ -1,13 +1,20 @@
 package com.example.soundcompas;
 
 import android.app.Activity;
+import android.content.ContentValues;
+import android.content.Context;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteOpenHelper;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.location.Location;
 import android.media.MediaPlayer;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.speech.tts.TextToSpeech;
 import android.util.Log;
 import android.view.View;
@@ -16,12 +23,16 @@ import android.view.animation.RotateAnimation;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.tasks.OnSuccessListener;
 
 import androidx.annotation.RequiresApi;
 
 import java.util.Locale;
 
 public class MainActivity extends Activity implements SensorEventListener {
+    private FusedLocationProviderClient fusedLocationClient;
     TextToSpeech textToSpeech;
     //Объявляем картинку для компаса
     private ImageView HeaderImage;
@@ -31,7 +42,9 @@ public class MainActivity extends Activity implements SensorEventListener {
     private SensorManager mSensorManager;
     //Объявляем объект TextView
     TextView CompOrient;
-
+    TextView Locat;
+    Handler handler = new Handler();
+    DBHelper dbHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,19 +52,125 @@ public class MainActivity extends Activity implements SensorEventListener {
         setContentView(R.layout.activity_main);
         //Связываем объект ImageView с нашим изображением:
         HeaderImage = (ImageView) findViewById(R.id.Compas);
-        play("a");
+        //play("a");
         //TextView в котором будет отображаться градус поворота:
         CompOrient = (TextView) findViewById(R.id.Header);
+        Locat = (TextView) findViewById(R.id.Footer);
 
         //Инициализируем возможность работать с сенсором устройства:
         mSensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+        fusedLocationClient.getLastLocation()
+                .addOnSuccessListener(this, new OnSuccessListener<Location>() {
+                    @Override
+                    public void onSuccess(Location location) {
+                        if (location != null) {
+                            Locat.setText("Широта: " + Double.toString(location.getLatitude()) +
+                                    "\nДолгота: " + Double.toString(location.getLongitude()));
+                        } else {
+                            Locat.setText("Не получается получить данные о геолокации");
+                        }
+                    }
+                });
+        dbHelper = new DBHelper(this);
     }
 
+    public double latitude;
+    public double longitude;
+
+    public void LocatOnTime()
+    {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+        fusedLocationClient.getLastLocation()
+                .addOnSuccessListener(this, new OnSuccessListener<Location>() {
+                    @Override
+                    public void onSuccess(Location location) {
+                        if (location != null) {
+                            latitude = location.getLatitude();
+                            longitude = location.getLongitude();
+                            Locat.setText("Широта: " + Double.toString(latitude) +
+                                    "\nДолгота: " + Double.toString(longitude));
+                            ContentValues cv = new ContentValues();
+                            SQLiteDatabase db = dbHelper.getWritableDatabase();
+                            Log.d("DATABASE", "--- Insert in mytable: ---");
+                            // подготовим данные для вставки в виде пар: наименование столбца - значение
+
+                            cv.put("lat", latitude);
+                            cv.put("long", longitude);
+                            // вставляем запись и получаем ее ID
+                            long rowID = db.insert("location", null, cv);
+                            Log.d("DATABASE", "row inserted, ID = " + rowID);
+                        } else {
+                            Locat.setText("Не получается получить данные о геолокации");
+                        }
+                    }
+                });
+        Log.d("DATABASE", "--- Rows in mytable: ---");
+        // делаем запрос всех данных из таблицы mytable, получаем Cursor
+        Cursor c = db.query("location", null, null, null, null, null, null);
+
+        // ставим позицию курсора на первую строку выборки
+        // если в выборке нет строк, вернется false
+        if (c.moveToFirst()) {
+            // определяем номера столбцов по имени в выборке
+            int idColIndex = c.getColumnIndex("id");
+            int nameColIndex = c.getColumnIndex("lat");
+            int emailColIndex = c.getColumnIndex("long");
+
+            // deleting first entry
+            if (c.isFirst())
+                db.delete("location","id=?",new String[]{Integer.toString(c.getInt(idColIndex))});
+
+            do {
+                // получаем значения по номерам столбцов и пишем все в лог
+                Log.d("LOG_TAG",
+                        "ID = " + c.getInt(idColIndex) +
+                                ", name = " + c.getString(nameColIndex) +
+                                ", email = " + c.getString(emailColIndex));
+                // переход на следующую строку
+                // а если следующей нет (текущая - последняя), то false - выходим из цикла
+            } while (c.moveToNext());
+        } else
+            Log.d("LOG_TAG", "0 rows");
+        c.close();
+    }
+
+    class DBHelper extends SQLiteOpenHelper {
+
+        public DBHelper(Context context) {
+            // конструктор суперкласса
+            super(context, "Location.db", null, 1);
+        }
+
+        @Override
+        public void onCreate(SQLiteDatabase db) {
+            Log.d("DATABASE", "--- onCreate database ---");
+            // создаем таблицу с полями
+            db.execSQL("create table location ("
+                    + "id INTEGER primary key autoincrement,"
+                    + "lat REAL,"
+                    + "long REAL" + ");");
+        }
+
+        @Override
+        public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+
+        }
+    }
+
+    private Runnable runnableCode = new Runnable() {
+        @Override
+        public void run() {
+            LocatOnTime();
+            handler.postDelayed(this, 5000);
+        }
+    };
 
     @Override
     protected void onResume() {
         super.onResume();
-
+        handler.post(runnableCode);
         //Устанавливаем слушателя ориентации сенсора
         mSensorManager.registerListener(this, mSensorManager.getDefaultSensor(Sensor.TYPE_ORIENTATION),
                 SensorManager.SENSOR_DELAY_GAME);
@@ -110,5 +229,7 @@ public class MainActivity extends Activity implements SensorEventListener {
         Toast.makeText(this, Integer.toString(360-degree)+"°", Toast.LENGTH_SHORT).show();
         play("a"+Integer.toString(360-degree));
     }
+
+
 
 }

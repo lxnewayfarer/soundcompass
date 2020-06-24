@@ -33,5 +33,29 @@
             android:layout_gravity="center"
             android:onClick="Click"/>
 
+        <TextView
+            android:id="@+id/Info"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerHorizontal="true"
+            android:layout_gravity="top"
+            android:padding="15dp"
+            android:text="Обновление каждые 2 мин."
+            android:textColor="#FFFFF0"
+            android:textSize="10sp"
+            app:layout_constraintBottom_toTopOf="@+id/Footer"
+             />
+
+        <TextView
+            android:id="@+id/Footer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerHorizontal="true"
+            android:layout_gravity="bottom"
+            android:padding="15dp"
+            android:text="Lat: "
+            android:textColor="#FFFFF0"
+            android:textSize="20sp"
+            app:layout_constraintBottom_toBottomOf="@+id/imageView1" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
