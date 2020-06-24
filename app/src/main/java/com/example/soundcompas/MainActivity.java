@@ -3,6 +3,7 @@ package com.example.soundcompas;
 import android.app.Activity;
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
@@ -12,7 +13,6 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.location.Location;
 import android.media.MediaPlayer;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.speech.tts.TextToSpeech;
@@ -22,14 +22,9 @@ import android.view.animation.Animation;
 import android.view.animation.RotateAnimation;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.tasks.OnSuccessListener;
-
-import androidx.annotation.RequiresApi;
-
-import java.util.Locale;
 
 public class MainActivity extends Activity implements SensorEventListener {
     private FusedLocationProviderClient fusedLocationClient;
@@ -136,7 +131,7 @@ public class MainActivity extends Activity implements SensorEventListener {
         c.close();
     }
 
-    class DBHelper extends SQLiteOpenHelper {
+    static class DBHelper extends SQLiteOpenHelper {
 
         public DBHelper(Context context) {
             // конструктор суперкласса
@@ -163,7 +158,7 @@ public class MainActivity extends Activity implements SensorEventListener {
         @Override
         public void run() {
             LocatOnTime();
-            handler.postDelayed(this, 5000);
+            handler.postDelayed(this, 120000);
         }
     };
 
@@ -224,12 +219,12 @@ public class MainActivity extends Activity implements SensorEventListener {
 
     public void Click(View view)
     {
-
-        // выводим сообщение
-        Toast.makeText(this, Integer.toString(360-degree)+"°", Toast.LENGTH_SHORT).show();
         play("a"+Integer.toString(360-degree));
     }
 
-
+    public void showMap(View view) {
+        Intent intent = new Intent(this, DisplayMapActivity.class);
+        startActivity(intent);
+    }
 
 }
