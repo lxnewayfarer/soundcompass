@@ -158,7 +158,7 @@ public class MainActivity extends Activity implements SensorEventListener {
         @Override
         public void run() {
             LocatOnTime();
-            handler.postDelayed(this, 120000);
+            handler.postDelayed(this, 180000);
         }
     };
 

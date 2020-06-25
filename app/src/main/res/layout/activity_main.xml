@@ -40,9 +40,9 @@
             android:layout_centerHorizontal="true"
             android:layout_gravity="top"
             android:padding="15dp"
-            android:text="Обновление каждые 2 мин."
+            android:text="Обновление каждые 3 мин."
             android:textColor="#FFFFF0"
-            android:textSize="10sp"
+            android:textSize="12sp"
             app:layout_constraintBottom_toTopOf="@+id/Footer"
              />
 
