@@ -17,6 +17,8 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 
+import java.util.ArrayList;
+
 public class DisplayMapActivity extends FragmentActivity implements OnMapReadyCallback {
     private GoogleMap mMap;
     MainActivity.DBHelper dbHelper;
@@ -49,14 +51,11 @@ public class DisplayMapActivity extends FragmentActivity implements OnMapReadyCa
         mMap = googleMap;
         // DB on read
         SQLiteDatabase db = dbHelper.getReadableDatabase();
-
-        // делаем запрос всех данных из таблицы mytable, получаем Cursor
-        Cursor c = db.query("location", null, null, null, null, null, null);
-
-        // ставим позицию курсора на первую строку выборки
-        // если в выборке нет строк, вернется false
-        LatLng[] locations = new LatLng[11];
+        mMap.clear();
+        mMap.setMyLocationEnabled(true);
+        ArrayList<LatLng> locations = new ArrayList<>();
         int i = 0;
+        Cursor c = db.query("location", null, null, null, null, null, null);
         if (c.moveToFirst()) {
             // определяем номера столбцов по имени в выборке
             int idColIndex = c.getColumnIndex("id");
@@ -64,24 +63,17 @@ public class DisplayMapActivity extends FragmentActivity implements OnMapReadyCa
             int emailColIndex = c.getColumnIndex("long");
 
             do {
-                mMap.clear();
-                mMap.setMyLocationEnabled(true);
                 latitude = c.getDouble(nameColIndex);
                 longitude = c.getDouble(emailColIndex);
-                locations[i] = new LatLng(latitude, longitude);
+                locations.add(new LatLng(latitude, longitude));
                 i++;
             } while (c.moveToNext());
         } else
             Log.d("LOG_TAG", "0 rows");
         c.close();
-        // filling empty locations with last seen
-        while (i < 11){
-            i++;
-            locations[i] = new LatLng(latitude, longitude);
-        }
         Polyline polyline = mMap.addPolyline(new PolylineOptions()
                 .clickable(true)
-                .add(locations));
+                .add(locations.toArray(new LatLng[locations.size()])));
         polyline.setJointType(JointType.ROUND);
         LatLng currentLocation = new LatLng(latitude, longitude);
         mMap.addMarker(new MarkerOptions().position(currentLocation).title("You are here"));

@@ -14,6 +14,7 @@ import android.hardware.SensorManager;
 import android.location.Location;
 import android.media.MediaPlayer;
 import android.os.Bundle;
+import android.os.CountDownTimer;
 import android.os.Handler;
 import android.speech.tts.TextToSpeech;
 import android.util.Log;
@@ -38,6 +39,7 @@ public class MainActivity extends Activity implements SensorEventListener {
     //Объявляем объект TextView
     TextView CompOrient;
     TextView Locat;
+    TextView Entries;
     Handler handler = new Handler();
     DBHelper dbHelper;
 
@@ -51,6 +53,7 @@ public class MainActivity extends Activity implements SensorEventListener {
         //TextView в котором будет отображаться градус поворота:
         CompOrient = (TextView) findViewById(R.id.Header);
         Locat = (TextView) findViewById(R.id.Footer);
+        Entries = (TextView) findViewById(R.id.Entries);
 
         //Инициализируем возможность работать с сенсором устройства:
         mSensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
@@ -68,6 +71,8 @@ public class MainActivity extends Activity implements SensorEventListener {
                     }
                 });
         dbHelper = new DBHelper(this);
+        LocatOnTime();
+        startTimer(60000);
     }
 
     public double latitude;
@@ -88,25 +93,21 @@ public class MainActivity extends Activity implements SensorEventListener {
                                     "\nДолгота: " + Double.toString(longitude));
                             ContentValues cv = new ContentValues();
                             SQLiteDatabase db = dbHelper.getWritableDatabase();
-                            Log.d("DATABASE", "--- Insert in mytable: ---");
-                            // подготовим данные для вставки в виде пар: наименование столбца - значение
-
                             cv.put("lat", latitude);
                             cv.put("long", longitude);
                             // вставляем запись и получаем ее ID
                             long rowID = db.insert("location", null, cv);
-                            Log.d("DATABASE", "row inserted, ID = " + rowID);
+                            Log.d("DATABASE", "row inserted, ID = " + rowID + ", lat/lng: " + latitude + "/" + longitude);
                         } else {
                             Locat.setText("Не получается получить данные о геолокации");
                         }
                     }
                 });
-        Log.d("DATABASE", "--- Rows in mytable: ---");
-        // делаем запрос всех данных из таблицы mytable, получаем Cursor
         Cursor c = db.query("location", null, null, null, null, null, null);
-
         // ставим позицию курсора на первую строку выборки
         // если в выборке нет строк, вернется false
+        int i = 0;
+        int idFirstRow=0;
         if (c.moveToFirst()) {
             // определяем номера столбцов по имени в выборке
             int idColIndex = c.getColumnIndex("id");
@@ -115,20 +116,25 @@ public class MainActivity extends Activity implements SensorEventListener {
 
             // deleting first entry
             if (c.isFirst())
-                db.delete("location","id=?",new String[]{Integer.toString(c.getInt(idColIndex))});
-
+                idFirstRow = c.getInt(idColIndex);
             do {
+                i++;
                 // получаем значения по номерам столбцов и пишем все в лог
-                Log.d("LOG_TAG",
-                        "ID = " + c.getInt(idColIndex) +
-                                ", name = " + c.getString(nameColIndex) +
-                                ", email = " + c.getString(emailColIndex));
+                Log.d("",
+                        "IDb = " + c.getInt(idColIndex) );
                 // переход на следующую строку
                 // а если следующей нет (текущая - последняя), то false - выходим из цикла
             } while (c.moveToNext());
-        } else
-            Log.d("LOG_TAG", "0 rows");
+        }
+
+        while (i > 30) {
+            db.delete("location", "id=?", new String[]{Integer.toString(idFirstRow)});
+            i--;
+            idFirstRow++;
+        }
         c.close();
+        Log.d("DATABASE: ", "Rows count: " + i);
+        Entries.setText("\nСохраненных: " + Integer.toString(i));
     }
 
     static class DBHelper extends SQLiteOpenHelper {
@@ -154,18 +160,20 @@ public class MainActivity extends Activity implements SensorEventListener {
         }
     }
 
-    private Runnable runnableCode = new Runnable() {
-        @Override
-        public void run() {
-            LocatOnTime();
-            handler.postDelayed(this, 180000);
-        }
-    };
+    private void startTimer(long time){
+        CountDownTimer counter = new CountDownTimer(60000, 1000){
+            public void onTick(long millisUntilDone){
+            }
 
+            public void onFinish() {
+                LocatOnTime();
+                startTimer(60000);
+            }
+        }.start();
+    }
     @Override
     protected void onResume() {
         super.onResume();
-        handler.post(runnableCode);
         //Устанавливаем слушателя ориентации сенсора
         mSensorManager.registerListener(this, mSensorManager.getDefaultSensor(Sensor.TYPE_ORIENTATION),
                 SensorManager.SENSOR_DELAY_GAME);
@@ -174,9 +182,6 @@ public class MainActivity extends Activity implements SensorEventListener {
     @Override
     protected void onPause() {
         super.onPause();
-
-        //Останавливаем при надобности слушателя ориентации
-        //сенсора с целью сбережения заряда батареи:
         mSensorManager.unregisterListener(this);
     }
     public int degree;

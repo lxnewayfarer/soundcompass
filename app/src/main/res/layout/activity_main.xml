@@ -40,7 +40,7 @@
             android:layout_centerHorizontal="true"
             android:layout_gravity="top"
             android:padding="15dp"
-            android:text="Обновление каждые 3 мин."
+            android:text="Обновление каждую минуту"
             android:textColor="#FFFFF0"
             android:textSize="12sp"
             app:layout_constraintBottom_toTopOf="@+id/Footer"
@@ -56,7 +56,7 @@
             android:text="Lat: "
             android:textColor="#FFFFF0"
             android:textSize="20sp"
-            app:layout_constraintBottom_toBottomOf="@+id/imageView1" />
+            app:layout_constraintBottom_toTopOf="@+id/Entries" />
 
         <ImageView
             android:id="@+id/MapIcon"
@@ -67,7 +67,21 @@
             android:layout_gravity="center"
             android:onClick="showMap"
             android:src="@drawable/map"
+            android:layout_marginRight="20dp"
             app:layout_constraintBottom_toBottomOf="@+id/imageView1"
             app:layout_constraintEnd_toEndOf="@+id/imageView1" />
+
+        <TextView
+            android:id="@+id/Entries"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerHorizontal="true"
+            android:layout_gravity="bottom"
+
+            android:padding="15dp"
+            android:text="Сохраненных: "
+            android:textColor="#FFFFF0"
+            android:textSize="15sp"
+            app:layout_constraintBottom_toBottomOf="@+id/imageView1" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

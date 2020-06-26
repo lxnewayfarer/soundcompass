@@ -1,4 +1,4 @@
 <resources>
     <string name="app_name">Sound Compass</string>
-
+    <string name="google_maps_key">AIzaSyAAZdXJnnqALV5qd8XssKA9If4hUlGJrOQ</string>
 </resources>
